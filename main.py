@@ -19,8 +19,8 @@ if __name__ == "__main__":
 
     parser.add_option("-t", "--table", dest="table", help="table to be backuped")
     parser.add_option("-b", "--backup", dest="backup", help="path to backup")
-    parser.add_option("-i", "--import", dest="imp", help="restore backup", default=False)
-    parser.add_option("-e", "--export", dest="exp", help="make backup", default=False)
+    parser.add_option("-i", "--import", action="store_true", dest="imp", help="restore backup", default=False)
+    parser.add_option("-e", "--export", action="store_true", dest="exp", help="make backup", default=False)
 
     (options, args) = parser.parse_args()
 
