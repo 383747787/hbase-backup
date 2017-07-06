@@ -1,9 +1,12 @@
 #!/usr/bin/python
 
 from optparse import OptionParser
-from hbasewrapper import HBaseWrapper
+from hbasewrapper import HBaseWrapper, HDFSWrapper
 
+import re
 import sys
+import time
+import uuid
 
 def validate_options(options):
     if options.imp == options.exp:
@@ -13,6 +16,29 @@ def validate_options(options):
         print "--backup path should be specified"
         return False
     return True
+
+def export_table(table, target, w_hbase, w_hdfs):
+    print "Exporting %s to %s" % (table, target)
+    w_hdfs.remove(target)
+    w_hbase.backup_table(table, target)
+    w_hdfs.save_meta(w_hbase.table_meta(table), target)
+
+def main(options):
+    w_hbase = HBaseWrapper()
+    w_hdfs = HDFSWrapper()
+
+    if options.exp:
+        backup_path = "%s/%s/" % (options.backup, time.strftime("%Y-%m-%d"))
+        if options.table:
+            if not options.table in w_hbase.get_tables():
+                print "Table %s does not exists" % options.table
+            export_table(options.table, backup_path + re.sub(r'[^A-Za-z0-9_-]', '_', options.table), w_hbase, w_hdfs)
+        else:
+            for table in w_hbase.get_tables():
+                export_table(table, backup_path + re.sub(r'[^A-Za-z0-9_-]', '_', table), w_hbase, w_hdfs)
+
+    if options.imp:
+        pass
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -24,10 +50,5 @@ if __name__ == "__main__":
 
     (options, args) = parser.parse_args()
 
-    if not validate_options(options):
-        #sys.exit();
-        pass
-
-    wrapper = HBaseWrapper()
-
-    print options
+    if validate_options(options):
+        main(options)
