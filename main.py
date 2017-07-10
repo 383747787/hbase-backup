@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from optparse import OptionParser
-from hbasewrapper import HBaseWrapper, HDFSWrapper
+from wrappers import HBaseWrapper, HDFSWrapper
 
 import re
 import sys
@@ -24,8 +24,8 @@ def export_table(table, target, w_hbase, w_hdfs):
     w_hdfs.save_meta(w_hbase.table_meta(table), target)
 
 def main(options):
-    w_hbase = HBaseWrapper()
-    w_hdfs = HDFSWrapper()
+    w_hbase = HBaseWrapper(options.dry)
+    w_hdfs = HDFSWrapper(options.dry)
 
     if options.exp:
         backup_path = "%s/%s/" % (options.backup, time.strftime("%Y-%m-%d"))
@@ -38,7 +38,7 @@ def main(options):
                 export_table(table, backup_path + re.sub(r'[^A-Za-z0-9_-]', '_', table), w_hbase, w_hdfs)
 
     if options.imp:
-        pass
+        w_hbase.import_table(options.table, options.backup)
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -47,6 +47,7 @@ if __name__ == "__main__":
     parser.add_option("-b", "--backup", dest="backup", help="path to backup")
     parser.add_option("-i", "--import", action="store_true", dest="imp", help="restore backup", default=False)
     parser.add_option("-e", "--export", action="store_true", dest="exp", help="make backup", default=False)
+    parser.add_option("-d", "--dry-run", action="store_true", dest="dry", help="make backup", default=False)
 
     (options, args) = parser.parse_args()
 

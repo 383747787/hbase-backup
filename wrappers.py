@@ -4,10 +4,20 @@ import re
 import uuid
 
 class ShellWrapper:
+
+    _dry = False
+
+    def __init__(self, dry):
+        self._dry = dry
+
     def _run(self, command):
-        p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
-        (o, e) = p.communicate()
-        return o
+        if self._dry:
+            print command
+            return ""
+        else:
+            p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+            (o, e) = p.communicate()
+            return o
 
 class HBaseWrapper(ShellWrapper):
     def __parse_cf(self, info):
@@ -22,7 +32,7 @@ class HBaseWrapper(ShellWrapper):
 
     def create_table(self, meta):
         self._run("echo \"create '%s', %s\" | hbase shell" % (meta.table, ["'%s'" % cf for cf in meta.column_families].join(', ')))
-        
+
     def import_table(self, table, path):
         self._run('hbase org.apache.hadoop.hbase.mapreduce.Import "%s" %s' % (table, path))
 
@@ -38,9 +48,10 @@ class HBaseWrapper(ShellWrapper):
 class HDFSWrapper(ShellWrapper):
     def save_meta(self, meta, path):
         tmp_filename = '/tmp/%s.json' % uuid.uuid4()
-        with open(tmp_filename, 'w') as outfile:
-            json.dump(meta, outfile)
-            outfile.close()
+        if not self._dry:
+            with open(tmp_filename, 'w') as outfile:
+                json.dump(meta, outfile)
+                outfile.close()
         self._run('hdfs dfs -put %s %s/meta.json' % (tmp_filename, path))
 
     def load_meta(self, path):
